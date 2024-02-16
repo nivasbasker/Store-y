@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- background_elevated_card.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background color for the card -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#40000000" /> <!-- Adjust the color as needed -->
+            <corners android:radius="16dp" /> <!-- Adjust the radius for rounded corners -->
+        </shape>
+    </item>
+
+    <!-- Shadow for the card -->
+    <item android:bottom="4dp" android:left="4dp" android:right="4dp" android:top="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" /> <!-- Adjust the shadow color and alpha as needed -->
+            <corners android:radius="16dp" /> <!-- Should match the corner radius of the card -->
+        </shape>
+    </item>
+</layer-list>

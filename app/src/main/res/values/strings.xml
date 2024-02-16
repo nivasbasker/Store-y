@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Store\'y</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+
+    <string name="title_stats">DashBoard</string>
+    <string name="title_invoices">Invoices</string>
+    <string name="title_store">Store</string>
+</resources>
