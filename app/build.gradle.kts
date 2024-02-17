@@ -43,6 +43,10 @@ dependencies {
     implementation("androidx.room:room-runtime:2.5.2")
     annotationProcessor("androidx.room:room-compiler:2.5.2")
     implementation("com.google.code.gson:gson:2.8.9")
-    implementation ("com.itextpdf:itext7-core:8.0.2")
+    implementation("com.itextpdf:itext7-core:8.0.2")
+
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    implementation("com.google.android.gms:play-services-base:18.3.0")
+
 
 }

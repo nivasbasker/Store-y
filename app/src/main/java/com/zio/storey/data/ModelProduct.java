@@ -6,18 +6,22 @@ import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "Products")
+@Entity(tableName = "products")
 public class ModelProduct {
 
-    @PrimaryKey
     @NonNull
-    @ColumnInfo(name = "pname")
-    private String product_name;
-    @ColumnInfo(name = "net")
-    private int net;
-    @ColumnInfo(name = "gst")
-    private int gst;
+    @ColumnInfo(name = "b_id")
+    private String barcodeID;
 
+    @NonNull
+    @PrimaryKey
+    @ColumnInfo(name = "name")
+    private String product_name;
+    @NonNull
+    @ColumnInfo(name = "price")
+    private int net;
+
+    @NonNull
     @ColumnInfo(name = "quantity")
     private int quantity;
 
@@ -25,11 +29,20 @@ public class ModelProduct {
     public ModelProduct() {
     }
 
-    public ModelProduct(@NonNull String product_name, int net, int gst, int quantity) {
+    public ModelProduct(@NonNull String barcodeID, @NonNull String product_name, int net, int quantity) {
+        this.barcodeID = barcodeID;
         this.product_name = product_name;
         this.net = net;
-        this.gst = gst;
         this.quantity = quantity;
+    }
+
+    @NonNull
+    public String getBarcodeID() {
+        return barcodeID;
+    }
+
+    public void setBarcodeID(@NonNull String barcodeID) {
+        this.barcodeID = barcodeID;
     }
 
     @NonNull
@@ -47,14 +60,6 @@ public class ModelProduct {
 
     public void setNet(int net) {
         this.net = net;
-    }
-
-    public int getGst() {
-        return gst;
-    }
-
-    public void setGst(int gst) {
-        this.gst = gst;
     }
 
     public int getQuantity() {

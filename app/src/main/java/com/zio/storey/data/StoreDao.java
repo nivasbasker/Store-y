@@ -1,12 +1,11 @@
 package com.zio.storey.data;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 
-import com.zio.storey.Utils;
+import com.zio.storey.util.Utils;
 
 import java.util.List;
 
@@ -33,27 +32,37 @@ public interface StoreDao {
     @Query("SELECT SUM(net) FROM " + InvoiceTable)
     String getTotalSale();
 
-    @Query("SELECT pname FROM " + ProductsTable + " WHERE quantity <10 ORDER BY quantity")
-    List<String> getLowStocks();
+    @Query("SELECT name, COUNT(name) AS int_val FROM " + ProductsTable + " WHERE quantity <10 ORDER BY quantity LIMIT 1")
+    Utils.StringAndInt getLowStocks();
+
 
     //for orders........
     @Insert
     void addOrder(ModelOrder... users);
+
+    @Query("SELECT COUNT(*) FROM " + OrderTable)
+    int getTotalOrders();
 
 
     //for products............
     @Query("SELECT * FROM " + ProductsTable)
     List<ModelProduct> getAllProducts();
 
-    @Query("SELECT * FROM " + ProductsTable + " WHERE pname LIKE :Name " +
-            "LIMIT 1")
-    ModelProduct FindProduct(String Name);
+    @Query("SELECT * FROM " + ProductsTable + " WHERE name = :Name ")
+    ModelProduct FindProductByName(String Name);
+
+    @Query("SELECT * FROM " + ProductsTable + " WHERE b_id = :bid ")
+    ModelProduct FindProductByBID(String bid);
 
     @Insert
     void addProduct(ModelProduct... prods);
 
     @Update
     void updateProduct(ModelProduct... products);
+
+    @Query("UPDATE " + ProductsTable + " SET quantity = quantity-1 WHERE name == :product_name")
+    void decreaseProduct(String product_name);
+
 
     //for invoices...........
     @Query("SELECT * FROM " + InvoiceTable)

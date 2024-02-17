@@ -1,4 +1,4 @@
-package com.zio.storey;
+package com.zio.storey.util;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 
+import com.zio.storey.R;
 import com.zio.storey.data.ModelInvoice;
 
 import java.util.List;

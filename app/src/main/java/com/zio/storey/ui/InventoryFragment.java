@@ -13,9 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
-import com.zio.storey.AdapterProducts;
+import com.zio.storey.util.AdapterProducts;
 import com.zio.storey.data.DataBase;
-import com.zio.storey.data.ProductsDAO;
+import com.zio.storey.data.StoreDao;
 import com.zio.storey.databinding.FragmentInventoryBinding;
 
 public class InventoryFragment extends Fragment {
@@ -31,12 +31,13 @@ public class InventoryFragment extends Fragment {
     }
 
     DataBase db;
-    ProductsDAO productsDAO;
+    StoreDao dao;
+
     private FragmentInventoryBinding binding;
 
-    private RecyclerView recyclerView;
+    private RecyclerView ProductsView;
 
-    ImageButton add, edit;
+    ImageButton add;
 
     private AdapterProducts adapter;
 
@@ -46,13 +47,12 @@ public class InventoryFragment extends Fragment {
         // Inflate the layout for this fragment
         binding = FragmentInventoryBinding.inflate(inflater, container, false);
         db = Room.databaseBuilder(getContext(), DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
-        productsDAO = db.productsDAO();
+        dao = db.storeDao();
 
-
-        recyclerView = binding.productList;
+        ProductsView = binding.productList;
         add = binding.addProd;
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        ProductsView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         add.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,7 +70,7 @@ public class InventoryFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        adapter = new AdapterProducts(getContext(), productsDAO.getAll());
-        recyclerView.setAdapter(adapter);
+        adapter = new AdapterProducts(getContext(), dao.getAllProducts());
+        ProductsView.setAdapter(adapter);
     }
 }

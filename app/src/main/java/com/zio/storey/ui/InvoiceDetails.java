@@ -1,10 +1,11 @@
-package com.zio.storey;
+package com.zio.storey.ui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,17 +20,22 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
+import com.google.android.material.snackbar.Snackbar;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
+import com.zio.storey.util.AdapterProducts;
+import com.zio.storey.R;
 import com.zio.storey.data.DataBase;
-import com.zio.storey.data.InvoicesDAO;
 import com.zio.storey.data.ModelInvoice;
 import com.zio.storey.data.ModelOrder;
 import com.zio.storey.data.ModelProduct;
-import com.zio.storey.data.OrderDAO;
-import com.zio.storey.data.ProductsDAO;
+import com.zio.storey.data.StoreDao;
 import com.zio.storey.databinding.ActivityInvoiceDetailsBinding;
 
 import java.io.File;
@@ -54,19 +60,21 @@ public class InvoiceDetails extends AppCompatActivity {
     PopupWindow popupWindow = null;
     ActivityInvoiceDetailsBinding binding;
 
-    DataBase dbInv, dbProd, dbOrd;
-    InvoicesDAO invoicesDAO;
-    List<ModelProduct> fulllist;
 
-    RecyclerView orderView;
+    List<ModelProduct> allProductsList;
     List<ModelOrder> orderList;
-    RecyclerView recyclerView;
+    RecyclerView orderView;
+    RecyclerView searchResultRView;
+    AdapterProducts searchResultAdapter;
+
 
     private int net_value = 0;
 
     private String INV_ID;
 
-    private ProductsDAO productsDAO;
+
+    DataBase db;
+    private StoreDao dao;
 
 
     @Override
@@ -86,14 +94,13 @@ public class InvoiceDetails extends AppCompatActivity {
         bill_num.setText("INVOICE #");
 
         date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        day.setText(date);
         preferences = getSharedPreferences("invoices", Context.MODE_PRIVATE);
         bill = preferences.getInt("total", 0);
         INV_ID = "INV" + bill;
 
-        dbInv = Room.databaseBuilder(this, DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
-        dbProd = Room.databaseBuilder(this, DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
-        dbOrd = Room.databaseBuilder(this, DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
-        productsDAO = dbProd.productsDAO();
+        db = Room.databaseBuilder(this, DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
+        dao = db.storeDao();
 
         createPop();
 
@@ -106,19 +113,49 @@ public class InvoiceDetails extends AppCompatActivity {
 
     }
 
+    AdapterProducts.OnItemClickListener itemClickListener = new AdapterProducts.OnItemClickListener() {
+        @Override
+        public void onItemClick(ModelProduct product) {
+            selectedProduct(product);
+        }
+    };
+
+    private void selectedProduct(ModelProduct product) {
+        if (product.getQuantity() < 1) {
+            Toast.makeText(InvoiceDetails.this, "No stock !", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        popupWindow.dismiss();
+        ModelOrder order = new ModelOrder(INV_ID, product.getProduct_name(), product.getNet(), 1, product.getQuantity());
+        orderList.add(order);
+        add_value(order);
+
+        orderView.setAdapter(new AdapterProducts(orderList, InvoiceDetails.this, new AdapterProducts.QuantityChangeListener() {
+            @Override
+            public void onQuantityIncreased(ModelOrder order) {
+                add_value(order);
+            }
+        }));
+    }
+
     private void createPop() {
 
-        fulllist = productsDAO.getAll();
+        allProductsList = dao.getAllProducts();
 
         popupWindow = new PopupWindow(LayoutInflater.from(this).inflate(R.layout.popup_search, null),
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
                 true);
         popupWindow.setAnimationStyle(androidx.appcompat.R.style.Animation_AppCompat_Dialog);
 
         EditText search_place = popupWindow.getContentView().findViewById(R.id.search);
-        recyclerView = popupWindow.getContentView().findViewById(R.id.search_result);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+
+        searchResultRView = popupWindow.getContentView().findViewById(R.id.search_result);
+        searchResultRView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+
+        searchResultAdapter = new AdapterProducts(this, allProductsList);
+        searchResultRView.setAdapter(searchResultAdapter);
+        searchResultAdapter.setOnItemClickListener(itemClickListener);
 
         search_place.addTextChangedListener(new TextWatcher() {
             @Override
@@ -133,53 +170,59 @@ public class InvoiceDetails extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable editable) {
-                String userInput = editable.toString();
+                search_for(editable.toString());
+            }
+        });
 
-                search_for(userInput);
-
-
+        popupWindow.getContentView().findViewById(R.id.img_scan).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                scan();
             }
         });
 
     }
 
+    private void scan() {
+        GmsBarcodeScannerOptions options = new GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_UPC_A, Barcode.FORMAT_EAN_13).build();
+        GmsBarcodeScanner scanner = GmsBarcodeScanning.getClient(this);
+        scanner.startScan().addOnSuccessListener(barcode -> {
+            if (barcode.getValueType() == Barcode.TYPE_PRODUCT)
+                findID(barcode.getRawValue());
+            else Snackbar.make(binding.getRoot(), "Unable to detect", Snackbar.LENGTH_LONG).show();
+        }).addOnCanceledListener(() -> {
+            // Task canceled
+            Log.d("TAG", "Cancelled by user");
+            Snackbar.make(binding.getRoot(), "Unable to detect", Snackbar.LENGTH_LONG).show();
+        }).addOnFailureListener(e -> {
+            // Task failed with an exception
+            Log.d("TAG", e.getMessage());
+            Snackbar.make(binding.getRoot(), "Unable to detect", Snackbar.LENGTH_LONG).show();
+        });
+
+    }
+
+    private void findID(String id) {
+        ModelProduct resultProduct = dao.FindProductByBID(id);
+        if (resultProduct != null) {
+            selectedProduct(resultProduct);
+
+        } else Snackbar.make(binding.getRoot(), "Product not found", Snackbar.LENGTH_LONG).show();
+    }
+
+
     private void search_for(String userInput) {
         List<ModelProduct> resultProds = new ArrayList<>();
-        for (ModelProduct product : fulllist) {
+        for (ModelProduct product : allProductsList)
             if (product.getProduct_name().contains(userInput))
                 resultProds.add(product);
 
-        }
-        AdapterProducts adapter = new AdapterProducts(InvoiceDetails.this, resultProds);
-        recyclerView.setAdapter(adapter);
-        adapter.setOnItemClickListener(new AdapterProducts.OnItemClickListener() {
-            @Override
-            public void onItemClick(ModelProduct product) {
-                if (product.getQuantity() < 1) {
-                    Toast.makeText(InvoiceDetails.this, "No stock !", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                popupWindow.dismiss();
-                ModelOrder order = new ModelOrder(INV_ID, product.getProduct_name(), product.getNet(), 1, product.getQuantity());
-                add_value(order);
-                orderList.add(order);
-
-                orderView.setAdapter(new AdapterProducts(orderList, InvoiceDetails.this, new AdapterProducts.QuantityChangeListener() {
-                    @Override
-                    public void onQuantityIncreased(ModelOrder order) {
-                        add_value(order);
-                    }
-                }));
-            }
-        });
+        searchResultAdapter.setData(resultProds);
     }
 
     private void add_value(ModelOrder order) {
 
-        ModelProduct p = productsDAO.findByName(order.getProduct_name());
-        p.setQuantity(p.getQuantity() - 1);
-        productsDAO.updateProduct(p);
-
+        dao.decreaseProduct(order.getProduct_name());
         net_value += order.getNet();
         net.setText(String.valueOf(net_value));
     }
@@ -191,11 +234,9 @@ public class InvoiceDetails extends AppCompatActivity {
                 Integer.parseInt(net.getText().toString()),
                 date);
 
-        OrderDAO orderDAO = dbOrd.orderDAO();
-        orderDAO.addOrder(orderList.toArray(new ModelOrder[0]));
+        dao.addOrder(orderList.toArray(new ModelOrder[0]));
 
-        invoicesDAO = dbInv.invoicesDAO();
-        invoicesDAO.addInvoice(invoice);
+        dao.addInvoice(invoice);
 
         Toast.makeText(this, "saved successfully", Toast.LENGTH_LONG).show();
         preferences.edit().putInt("total", ++bill).apply();

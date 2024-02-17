@@ -1,4 +1,4 @@
-package com.zio.storey;
+package com.zio.storey.util;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -7,11 +7,11 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.zio.storey.R;
 import com.zio.storey.data.ModelOrder;
 import com.zio.storey.data.ModelProduct;
 
@@ -20,7 +20,7 @@ import java.util.List;
 public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHolder> {
 
     final Context context;
-    final List<ModelProduct> prodList;
+    List<ModelProduct> prodList;
 
     final List<ModelOrder> orders;
 
@@ -96,7 +96,6 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
                 @Override
                 public void onClick(View view) {
                     int q = model.getQuantity();
-                    Toast.makeText(context, String.valueOf(model.getMaxi()), Toast.LENGTH_SHORT).show();
                     if (q < model.getMaxi()) {
                         model.setQuantity(q + 1);
                         holder.t2.setText(model.getQuantity() + "  x  ₹" + model.getNet());
@@ -109,6 +108,11 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
         }
 
 
+    }
+
+    public void setData(List<ModelProduct> newDataList) {
+        this.prodList = newDataList;
+        notifyDataSetChanged();
     }
 
 

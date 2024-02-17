@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
@@ -14,11 +13,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
-import com.zio.storey.AdapterInvoice;
-import com.zio.storey.InvoiceDetails;
+import com.zio.storey.util.AdapterInvoice;
 import com.zio.storey.data.DataBase;
-import com.zio.storey.data.InvoicesDAO;
 import com.zio.storey.data.ModelInvoice;
+import com.zio.storey.data.StoreDao;
 import com.zio.storey.databinding.FragmentInvoicesBinding;
 
 import java.util.List;
@@ -27,14 +25,14 @@ public class InvoiceFragment extends Fragment {
 
     private FragmentInvoicesBinding binding;
 
-    private RecyclerView recyclerView;
+    private RecyclerView invoicesView;
 
-    List<ModelInvoice> Inv_list;
+    List<ModelInvoice> Invoices_list;
 
     ImageButton add;
 
     DataBase db;
-    InvoicesDAO invoicesDAO;
+    StoreDao dao;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -42,15 +40,13 @@ public class InvoiceFragment extends Fragment {
 
         binding = FragmentInvoicesBinding.inflate(inflater, container, false);
 
-        recyclerView = binding.invList;
+        invoicesView = binding.invList;
         add = binding.addInv;
 
         db = Room.databaseBuilder(getContext(), DataBase.class, "store").allowMainThreadQueries().fallbackToDestructiveMigration().build();
-        invoicesDAO = db.invoicesDAO();
+        dao = db.storeDao();
 
-        Inv_list = invoicesDAO.getAll();
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        invoicesView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         add.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,6 +63,6 @@ public class InvoiceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        recyclerView.setAdapter(new AdapterInvoice(getContext(), invoicesDAO.getAll()));
+        invoicesView.setAdapter(new AdapterInvoice(getContext(), dao.getAllInvoices()));
     }
 }
